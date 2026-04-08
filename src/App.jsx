@@ -1,79 +1,48 @@
 import { useState } from 'react'
-import CartSidebar from './components/CartSidebar'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import Header from './components/Header'
-import ProductList from './components/ProductList'
+import { CartProvider } from './context/CartProvider'
 import products from './data/products'
+import CartPage from './pages/CartPage'
+import CategoryPage from './pages/CategoryPage'
+import HomePage from './pages/HomePage'
 import './styles/App.css'
 
 function App() {
-  const [cartItems, setCartItems] = useState([])
-  const [isCartOpen, setIsCartOpen] = useState(false)
-
-  const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0)
-  const totalPrice = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0,
-  )
-
-  const handleAddToCart = (product) => {
-    setCartItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.id === product.id)
-
-      if (existingItem) {
-        return prevItems.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
-        )
-      }
-
-      return [...prevItems, { ...product, quantity: 1 }]
-    })
-  }
-
-  const handleIncreaseQuantity = (productId) => {
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === productId ? { ...item, quantity: item.quantity + 1 } : item,
-      ),
-    )
-  }
-
-  const handleDecreaseQuantity = (productId) => {
-    setCartItems((prevItems) =>
-      prevItems
-        .map((item) =>
-          item.id === productId
-            ? { ...item, quantity: item.quantity - 1 }
-            : item,
-        )
-        .filter((item) => item.quantity > 0),
-    )
-  }
-
-  const handleRemoveItem = (productId) => {
-    setCartItems((prevItems) =>
-      prevItems.filter((item) => item.id !== productId),
-    )
-  }
+  const [searchTerm, setSearchTerm] = useState('')
+  const categories = [...new Set(products.map((product) => product.category))]
 
   return (
-    <main className="app">
-      <div className="app-shell">
-        <Header totalItems={totalItems} onToggleCart={() => setIsCartOpen(true)} />
-        <ProductList products={products} onAddToCart={handleAddToCart} />
-      </div>
+    <CartProvider>
+      <main className="app">
+        <div className="app-shell">
+          <Header
+            categories={categories}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+          />
 
-      <CartSidebar
-        isOpen={isCartOpen}
-        cartItems={cartItems}
-        totalPrice={totalPrice}
-        onClose={() => setIsCartOpen(false)}
-        onIncrease={handleIncreaseQuantity}
-        onDecrease={handleDecreaseQuantity}
-        onRemove={handleRemoveItem}
-      />
-    </main>
+          <Routes>
+            <Route
+              path="/"
+              element={<HomePage products={products} searchTerm={searchTerm} />}
+            />
+            <Route
+              path="/category/:categoryName"
+              element={
+                <CategoryPage
+                  products={products}
+                  categories={categories}
+                  searchTerm={searchTerm}
+                />
+              }
+            />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </main>
+    </CartProvider>
   )
 }
 
